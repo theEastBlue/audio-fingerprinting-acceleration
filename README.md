@@ -76,6 +76,19 @@ The fingerprinting process consists of the following stages:
 
 ### Build
 
+## Installing dependencies
+
+If Homebrew is installed, run:
+```bash
+brew install opencv boost ffmpeg pkg-config
+```
+To verify that the opencv was installed, run:
+```bash
+pkg-config --modversion opencv4
+```
+
+To compile the algorithm (using clang), run:
+
 ```bash
 clang++ fingerprint.cpp \
     -std=c++14 \
@@ -83,6 +96,8 @@ clang++ fingerprint.cpp \
     $(pkg-config --cflags --libs opencv4) \
     -o fingerprint
 ```
+The program can be compiled using g++ in much the same way.
+
 
 ### Run
 
