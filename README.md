@@ -3,6 +3,10 @@ Hardware acceleration of the  dejavu-cpp-port
 
 > **NOTE: Week 05 Project Brief Presentation: https://canva.link/0kp52c2cmpuakbc**
 
+**Meeting minutes:**
+- [6 July:](/meeting-minutes/minutes-6-jul-26.md)
+
+
 ## Overview
 
 This project investigates hardware acceleration opportunities for an audio fingerprinting algorithm based on the Dejavu fingerprinting pipeline. The objective is to identify computational bottlenecks, implement suitable stages using High-Level Synthesis (HLS), and evaluate the resulting performance improvements on FPGA hardware.
