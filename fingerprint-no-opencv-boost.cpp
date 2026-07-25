@@ -241,7 +241,7 @@ string generate_hashes(vector<pair<int, int>> peaks) {
                 output << ',';
             }
             first = false;
-            output << "{\"hash\":\"" << sha1(input.str())
+            output << "{\"hash\":\"" << sha1(input.str()).substr(0, 20)
                    << "\",\"offset\":" << peaks[i].second << '}';
         }
     }
