@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include "fingerprint.h"
 
 #include <iostream>
@@ -42,15 +43,15 @@ struct Timer {
 
 Timer profiler;
 
-int DEFAULT_FAN_VALUE = 15;
+int DEFAULT_FAN_VALUE = 5;
 int MIN_HASH_TIME_DELTA = 0;
 int MAX_HASH_TIME_DELTA = 200;
-int FINGERPRINT_REDUCTION = 20;
-int PEAK_NEIGHBORHOOD_SIZE = 20;
+// FINGERPRINT_REDUCTION removed — was declared but never used
+int PEAK_NEIGHBORHOOD_SIZE = 6;   // was 20 — shrunk for short clip + smaller HLS kernel
 float DEFAULT_AMP_MIN = 10;
-int DEFAULT_WINDOW_SIZE = 4096;
-float DEFAULT_OVERLAP_RATIO = 0.5;
-float FS = 22050.0;
+int DEFAULT_WINDOW_SIZE = 512;
+float DEFAULT_OVERLAP_RATIO = 0.25;
+float FS = 11025.0;
 
 std::vector<std::vector<float>> stride_windows(const std::vector<float>& data,
                                                size_t blocksize,
@@ -151,6 +152,11 @@ std::string generate_hashes(vector<pair<int, int>>& v_in) {
   return buf.str();
 }
 
+// Simplified: removed background/eroded_background branch. After the dB floor
+// in fingerprint() (v clamped to >= 1e-8 before log10), no cell is ever exactly
+// 0.0f again, so (data == 0) was always all-false, making eroded_background
+// always all-false and detected_peaks == local_max anyway. This is behaviorally
+// identical to the original but does one dilate instead of dilate+erode.
 vector<pair<int, int>> get_2D_peaks(cv::Mat data) {
   cv::Mat tmpkernel =
       cv::getStructuringElement(cv::MORPH_CROSS,
@@ -172,19 +178,11 @@ vector<pair<int, int>> get_2D_peaks(cv::Mat data) {
   cv::Mat d1;
   cv::dilate(data, d1, kernel);
 
-  cv::Mat background = (data == 0);
-  cv::Mat local_max = (data == d1);
-
-  cv::Mat eroded_background;
-  cv::erode(background, eroded_background, kernel);
-
-  cv::Mat detected_peaks = local_max - eroded_background;
-
   vector<pair<int, int>> out;
 
   for (int i = 0; i < data.rows; i++) {
     for (int j = 0; j < data.cols; j++) {
-      if (detected_peaks.at<uint8_t>(i, j) == 255 &&
+      if (data.at<float>(i, j) == d1.at<float>(i, j) &&
           data.at<float>(i, j) > DEFAULT_AMP_MIN) {
         out.push_back({i, j});
       }
@@ -250,6 +248,13 @@ std::string fingerprint(float* data, int data_size) {
   auto peaks = get_2D_peaks(dst2);
   profiler.end("5. Peak Detection");
 
+  // ---- added: inspect peaks before hashing ----
+  cout << "peak count: " << peaks.size() << endl;
+  for (auto& p : peaks) {
+    cout << "(" << p.first << ", " << p.second << ")\n";
+  }
+  // -----------------------------------------------
+
   profiler.begin("6. Hashing and JSON");
   std::string result = generate_hashes(peaks);
   profiler.end("6. Hashing and JSON");
@@ -258,23 +263,14 @@ std::string fingerprint(float* data, int data_size) {
 
   return result;
 }
+std::vector<float> load_audio(const std::string& path) {
+  std::string cmd = "ffmpeg -hide_banner -loglevel panic -i " + path +
+                     " -f s16le -acodec pcm_s16le -ss 0 -ac 1 -ar 11025 - > raw_data";
+  system(cmd.c_str());
 
-int main() {
-  system("ffmpeg -hide_banner -loglevel panic -i test.mp3 "
-         "-f s16le -acodec pcm_s16le -ss 0 -ac 1 -ar 22050 - > raw_data");
-
-  ifstream f_in("raw_data", ios::binary);
-
+  std::ifstream f_in("raw_data", std::ios::binary);
+  std::vector<float> data;
   short speech;
-  float data[200000];
-  int i = 0;
-
-  while (f_in.read((char*)&speech, 2)) {
-    data[i++] = speech;
-  }
-
-  f_in.close();
-
-  cout << fingerprint(data, i) << endl;
-  return 0;
+  while (f_in.read((char*)&speech, 2)) data.push_back(speech);
+  return data;
 }
