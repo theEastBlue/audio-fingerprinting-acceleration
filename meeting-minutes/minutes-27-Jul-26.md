@@ -2,10 +2,10 @@
 
 ## Meeting Information
 
-**Meeting Date/Time:** 27 July 2026, 4:00pm – 9:00pm
-**Meeting Purpose:** Lab session to review project progress, discuss report requirements, and plan the next development tasks.
-**Meeting Location:** In-person Lab Session
-**Note Takers:** Esha and Venus
+**Meeting Date/Time:** 27 July 2026, 4:00pm – 9:00pm  
+**Meeting Purpose:** Lab session to review project progress, discuss report requirements, and plan the next development tasks.  
+**Meeting Location:** In-person Lab Session  
+**Note Takers:** Esha and Venus  
 
 ## Attendees
 
@@ -18,8 +18,8 @@ People who attended:
 
 | Item                    | Description                                                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Project progress review | • Review current implementation status and discuss remaining milestones.<br>•                       |
-| Report guidance         | • Receive advice from tutors on report structure, performance evaluation, and future work.<br>• |
+| Project progress review | • Review current implementation status and discuss remaining milestones.<br>                      |
+| Report guidance         | • Receive advice from tutors on report structure, performance evaluation, and future work.<br> |
 | Development planning    | • Allocate remaining implementation and optimisation tasks before the next meeting.     |                                                                           |
 
 ## Discussion Items
