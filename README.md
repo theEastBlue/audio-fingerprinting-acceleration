@@ -5,6 +5,7 @@ Hardware acceleration of the  dejavu-cpp-port
 
 **Meeting minutes:**
 - [6 July:](/meeting-minutes/minutes-6-jul-26.md)
+- [27 July:](/meeting-minutes/minutes-27-Jul-26.md)
 
 
 ## Overview
