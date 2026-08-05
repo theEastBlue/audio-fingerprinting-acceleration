@@ -46,6 +46,8 @@ static void fft_lut(float re[WINDOW_SIZE], float im[WINDOW_SIZE]) {
             BUTTERFLY: for (int k = 0; k < half; k++) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=2048 avg=341
 #pragma HLS PIPELINE II=1
+#pragma HLS DEPENDENCE variable=re inter false
+#pragma HLS DEPENDENCE variable=im inter false
                 int idx   = k * step;
                 float cwr = W_real[idx];
                 float cwi = W_imag[idx];
