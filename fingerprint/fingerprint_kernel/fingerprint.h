@@ -12,7 +12,7 @@ constexpr int HOP         = WINDOW_SIZE - OVERLAP; // 2048
 constexpr int MAX_SAMPLES = 200000;
 constexpr int MAX_WINDOWS = 100; // MAX_WINDOWS = (MAX_SAMPLES - OVERLAP) / HOP + 4; = 100 based on our current constants
 constexpr int MAX_FREQ    = WINDOW_SIZE / 2 + 1; // 2049
-constexpr int MAX_PEAKS   = 20000;
+constexpr int MAX_PEAKS   = 20000 + 1; // the extra 1 is because of our peak counting logic
 
 constexpr int   DEFAULT_FAN_VALUE      = 15;
 constexpr int   MIN_HASH_TIME_DELTA    = 0;
@@ -21,7 +21,6 @@ constexpr int   PEAK_NEIGHBORHOOD_SIZE = 20;
 constexpr float DEFAULT_AMP_MIN        = 10.0f;
 
 constexpr float FS                     = 22050.0f;
-
 // could i possibly store my structs in a way that saves this conversion trouble?
 struct Peak {
     int freq;
@@ -52,14 +51,11 @@ void apply_hann(float windows[MAX_WINDOWS][WINDOW_SIZE],
 void compute_spectrogram(const float windows[MAX_WINDOWS][WINDOW_SIZE], int num_windows,
                           const float hann[WINDOW_SIZE], Spectrogram& spec);
 
-void detect_peaks_old(const Spectrogram& spec, PeakList& peaks);
-
 void detect_peaks(
     const float spec[MAX_FREQ][MAX_WINDOWS], 
     int num_windows,
     int peak_freq[MAX_PEAKS], 
-    int peak_time[MAX_PEAKS], 
-    int* peak_count
+    int peak_time[MAX_PEAKS]
 );
 
 void preprocessing(const float* data, int data_size, Spectrogram& spec, int& num_windows);

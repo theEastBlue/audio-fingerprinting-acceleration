@@ -71,19 +71,22 @@ std::string generate_hashes(PeakList& peaks) {
     return buf.str();
 }
 
-// Overloaded function to pass XRT device and kernel objects
 std::string fingerprint(float* data, int data_size, xrt::device& device, xrt::kernel& krnl) {
     static Spectrogram spec;
     static PeakList peaks;
     int num_windows = 0;
 
-    // Step 1: Preprocessing (CPU)
     preprocessing(data, data_size, spec, num_windows);
 
-    // Step 2: Hardware Acceleration (XRT)
     profiler.begin("3. Peak Detection (XRT Transfer & Kernel Exec)");
 
     // Allocate Buffer Objects (BOs) in Global Memory
+        //     void detect_peaks(
+        //     const float spec[MAX_FREQ][MAX_WINDOWS], arg0
+        //     int num_windows, // arg1
+        //     int peak_freq[MAX_PEAKS], // arg2
+        //     int peak_time[MAX_PEAKS] // arg3
+        // );
     auto bo_spec      = xrt::bo(device, MAX_FREQ * MAX_WINDOWS * sizeof(float), krnl.group_id(0));
     auto bo_peak_freq = xrt::bo(device, MAX_PEAKS * sizeof(int), krnl.group_id(2));
     auto bo_peak_time = xrt::bo(device, MAX_PEAKS * sizeof(int), krnl.group_id(3));
@@ -94,35 +97,68 @@ std::string fingerprint(float* data, int data_size, xrt::device& device, xrt::ke
     auto map_peak_time = bo_peak_time.map<int*>();
 
     // Copy spectrogram data to the mapped host pointer, then sync it to the device
-    std::memcpy(map_spec, spec.power, MAX_FREQ * MAX_WINDOWS * sizeof(float));
+    std::memset(
+        map_spec,
+        0,
+        MAX_FREQ * MAX_WINDOWS * sizeof(float)
+    );
+    // BEFORE memcpy
+    std::cout << "=== CPU SPEC ===\n";
+
+    std::cout << "spec[0][0] = "
+            << spec.power[0][0]
+            << "\n";
+
+    std::cout << "spec[0][1] = "
+            << spec.power[0][1]
+            << "\n";
+
+    std::cout << "spec[1][0] = "
+            << spec.power[1][0]
+            << "\n";
+
+    std::cout << "spec[10][5] = "
+            << spec.power[10][5]
+            << "\n";
+
+    std::cout << "num_windows = "
+            << num_windows
+            << "\n";
+
+    std::cout << "===============\n";
+    std::memcpy(map_spec, spec.power, MAX_FREQ * num_windows * sizeof(float));
+    std::cout << "=== MAP SPEC ===\n";
+    std::cout << map_spec[0] << "\n";
+    std::cout << map_spec[1] << "\n";
+    std::cout << map_spec[MAX_WINDOWS] << "\n";
+
+    std::cout << "===============\n";
     bo_spec.sync(XCL_BO_SYNC_BO_TO_DEVICE);
 
     // Execute the kernel
-    // Arguments match the kernel signature: spec (0), num_windows (1), peak_freq (2), peak_time (3), peak_count (4)
-    // We pass 0 as a placeholder for the peak_count reference scalar.
-    auto run = krnl(bo_spec, num_windows, bo_peak_freq, bo_peak_time, 0);
+    // Arguments match the kernel signature: spec (0), num_windows (1), peak_freq (2), peak_time (3)
+    std::cout << "Execution of the kernel\n";
+    auto run = krnl(bo_spec, num_windows, bo_peak_freq, bo_peak_time);
     
-    // Wait for the FPGA to finish processing
     run.wait();
 
-    // Sync output arrays from the device back to host memory
+    std::cout << "Get the output data from the device" << std::endl;
     bo_peak_freq.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
     bo_peak_time.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-    // Read the output scalar (peak_count) directly from the s_axilite register
-    int peak_count = run.get_arg<int>(4);
+    peaks.count = 0;
 
-    // Repack flattened hardware arrays back into CPU structs
-    peaks.count = peak_count;
-    for (int i = 0; i < peak_count; i++) {
+    for (int i = 0; i < MAX_PEAKS; i++) {
+        if (map_peak_time[i] == -1) break; // i hope this doesn't break vitis
         peaks.peaks[i].freq = map_peak_freq[i];
         peaks.peaks[i].time = map_peak_time[i];
+        peaks.count++;
     }
+
     profiler.end("3. Peak Detection (XRT Transfer & Kernel Exec)");
 
     std::cout << "Found " << peaks.count << " peaks.\n";
 
-    // Step 3: Post-processing (CPU)
     profiler.begin("4. Hashing and JSON");
     std::string result = generate_hashes(peaks);
     profiler.end("4. Hashing and JSON");
@@ -133,7 +169,7 @@ std::string fingerprint(float* data, int data_size, xrt::device& device, xrt::ke
 }
 
 int main(int argc, char** argv) {
-    // Command Line Parser to grab the .xclbin file
+
     sda::utils::CmdLineParser parser;
     parser.addSwitch("--xclbin_file", "-x", "input binary file string", "");
     parser.addSwitch("--device_id", "-d", "device index", "0");
@@ -176,7 +212,6 @@ int main(int argc, char** argv) {
 
     f_in.close();
 
-    // Call fingerprint function and pass the initialized XRT objects
     std::cout << fingerprint(data, i, device, krnl) << std::endl;
     
     return EXIT_SUCCESS;
