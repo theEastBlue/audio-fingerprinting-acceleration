@@ -17,23 +17,25 @@ two kernel launches from the host and one full round-trip of the spectrogram
 (`spec_power`, ~800KB) out to DDR and back in.
 
 `fused_kernel.cpp` merges them into **one** top-level function, `fingerprint_kernel`,
-with a single `m_axi` bundle pair (`gmem0` in: windows, `gmem1` out: peaks) and a
-single `s_axilite` control bundle. `spec_power` is a local on-chip array shared
-between the two internal stages (`compute_spectrogram_stage`,
-`detect_peaks_stage`) — it never appears on the kernel's argument list, so it
-never crosses the AXI boundary.
+with a single `s_axilite` control bundle and three `m_axi` bundles: `gmem0`
+(windows in), `gmem1` (peaks out), `gmem2` (`spec_power` scratch — see "BRAM
+fix" below for why this is a third `m_axi` port rather than an on-chip array).
 
 ## CSIM — functional correctness
 
 ```
+Found 43 peaks.
+RMSE(Freq) RMSE(Time) = 0.000000000000000 0.000000000000000
+gold peaks: 43   fused kernel peaks: 43
 CSIM PASS: fused kernel matches golden peaks
 ```
 
-The fused kernel's peak output matches `peaks.gold.dat` (RMSE(freq) and
-RMSE(time) both within tolerance, peak counts equal) — the merge did not change
-the algorithm's output, only where the intermediate spectrogram lives.
+Bit-exact match against `peaks.gold.dat` — zero error, exact peak count. The
+merge did not change the algorithm's output, only where the intermediate
+spectrogram lives, and that held true both before and after the BRAM fix
+below (re-verified, not assumed).
 
-## CSYNTH — the real finding: it doesn't fit the target device
+## CSYNTH round 1 — the real finding: it doesn't fit the target device
 
 ```
 INFO: [HLS 200-790] **** Loop Constraint Status: All loop constraints were NOT satisfied.
@@ -67,18 +69,52 @@ because it only ever holds a 41-row *slice* of the frequency axis, not the
 whole thing — the fused kernel's naive `spec_power[MAX_FREQ][MAX_WINDOWS]`
 buffer throws that efficiency away by materializing everything at once.
 
-**Recommended fix (not yet implemented):** restructure so only a rolling
-41-row line buffer is kept on-chip, matching `detect_peaks`'s original
-approach, instead of the full spectrogram. This is nontrivial because the FFT
-naturally produces one full-frequency *column* per time-window, while peak
-detection wants 41-row-tall *frequency* slices across all time-windows —
-fusing them without the full buffer means restructuring the peak-detection
-scan to consume data in the FFT's native production order, or accepting a
-transposed on-chip buffer (41 time-windows x 2049 freq bins ≈ 328KB — still
-over budget, but closer) and quantizing `spec_power` to a smaller type
-(e.g. int16 fixed-point, halving it to ~400KB / ~164KB for the transposed
-version) to close the remaining gap. Whichever route is chosen, it should be
-re-verified with another `csim`/`csynth` pass before being called done.
+**Why a rolling on-chip buffer doesn't work here, either:** the obvious fix is
+to keep only a 41-row sliding window on-chip, matching `detect_peaks`'s
+original approach, instead of the full spectrogram. That doesn't actually
+work for the fused kernel: the FFT naturally produces one full-frequency
+*column* per time-window (all 2049 bins for window `w`, at once), while peak
+detection needs 41-row-tall *frequency* slices across **all** time-windows
+before it can evaluate a single row. Producing row `f=0` requires every
+window's FFT to already be done — so *some* buffer has to hold the full
+spectrogram somewhere before frequency-major peak detection can start,
+regardless of which axis it's sliced on. Sliding on time instead of frequency
+was checked too (41 columns x 2049 rows ≈ 328KB at float32, ~164KB even at
+int16) — still doesn't fit in the ~72 BRAM18K blocks left after the FFT
+stage's own 24 and the AXI interfaces' 4. Quantizing further (int8) would
+just about fit but risks silently breaking the bit-exact match just proven
+above, for a gain that only helps if the goal is specifically on-chip storage.
+
+## BRAM fix — verified, not just proposed
+
+The actual fix: stop trying to fit the full spectrogram on-chip at all.
+`spec_power` is now a **device-side DDR scratch buffer** — its own `m_axi`
+bundle (`gmem2`), exactly like `windows` and the peak outputs, but the host
+never allocates a *host*-visible copy for it and never issues an
+`xrt::bo::sync()` for it. It's DRAM that only the kernel invocation touches.
+This still delivers the thing that actually mattered — **one** kernel launch
+instead of two, and the spectrogram never round-trips through the host —
+without needing it to physically fit in BRAM.
+
+Re-ran `csim_design` + `csynth_design` after the change:
+
+```
+CSIM PASS: fused kernel matches golden peaks   (43/43 peaks, RMSE 0.0 — unchanged)
+Estimated Fmax: 136.99 MHz                      (unchanged)
+```
+
+| Resource | Before fix | After fix | Available |
+|---|---|---|---|
+| BRAM | 561 (561%) ⚠️ | **53 (53%)** ✅ | 100 |
+| DSP | 45 (50%) | 45 (50%) | 90 |
+| FF | 10,301 (24%) | 11,527 (27%) | 41,600 |
+| LUT | 11,619 (55%) | 12,939 (62%) | 20,800 |
+
+`spec_power` no longer appears in the Storage Report at all (it's an AXI
+interface now, not an on-chip RAM); `gmem2` costs 4 BRAM blocks for its AXI
+FIFOs, same as `gmem0`/`gmem1`. The small increase in FF/LUT (24%→27%,
+55%→62%) is the extra AXI master logic for the third interface — expected,
+and still well within budget. **The fused kernel now fits the target device.**
 
 ## What still holds from the standalone LUT kernel work
 
@@ -116,22 +152,32 @@ With two separate kernels, the host does:
 3. Sync `spec_power` back out to device DDR, launch `detect_peaks`.
 4. Sync peak results back.
 
-Step 2+3 (an 800KB round trip through host-visible buffers, plus a second
+Step 2+3 (an 800KB round trip through *host-visible* buffers, plus a second
 `xrt::kernel` launch's fixed control/interrupt overhead) is what fusion
-removes — with one kernel, `spec_power` never leaves the chip, so steps 2 and
-3 simply don't happen, and there's one launch instead of two. This is a real,
-structural savings; it just can't be turned into a measured millisecond
-figure without XRT/board access. Once the BRAM issue above is fixed and the
-design fits, `hw_emu` (Vitis hardware emulation) would be the next
-measurement step — it doesn't need a board and would give a real, simulated
-transfer-time number to replace this analytical argument.
+removes. With the fused kernel, `spec_power` is device-side DRAM that the
+host allocates once (e.g. via `xrt::bo` with a device-only flag) and never
+syncs — steps 2 and 3 above simply don't happen from the host's perspective,
+and there's one `xrt::kernel` launch instead of two. The DDR traffic for
+`spec_power` still happens, just entirely inside the single kernel invocation
+rather than crossing back out to host memory between two launches. This is a
+real, structural savings; it just can't be turned into a measured millisecond
+figure without XRT/board access. `hw_emu` (Vitis hardware emulation) — no
+board needed — would be the next step to get a real, simulated transfer-time
+number in place of this analytical argument.
 
 ## Bottom line
 
-- **Fusion is functionally correct** (CSIM PASS against gold peaks) and the
-  accelerated FFT carries over unchanged (II=2, 137MHz).
-- **Fusion as implemented does not fit the target FPGA** (BRAM 561%) — this is
-  a real, measured result, not a guess, and is the actual next blocker.
-- Next step is the on-chip buffer restructuring described above, re-verified
-  with another `csim`/`csynth` run, before this can be considered
-  board-ready.
+- **Fusion is functionally correct** (CSIM PASS, bit-exact against gold
+  peaks, re-verified after the fix) and the accelerated FFT carries over
+  unchanged (II=2, 136.99MHz).
+- **Fusion now fits the target FPGA**: BRAM 561% → 53%, all other resources
+  well within budget (DSP 50%, FF 27%, LUT 62%) — both measured via real
+  `csynth_design` runs, not estimated.
+- Remaining gaps, in order of what's next: (1) no `cosim`/`hw_emu` run yet,
+  so timing is still HLS-estimated rather than RTL-cycle-accurate or
+  XRT-measured; (2) `kernel_run_fused.tcl` stops after `csynth_design` — no
+  `export_design`, so no `.xclbin`/`finger.bin` has been built; (3) `host.cpp`
+  has not been updated to call this fused kernel instead of the two old ones;
+  (4) no board run, by design (none available). None of these are blocked on
+  anything unresolved anymore — the architectural question (does it fit) is
+  answered.

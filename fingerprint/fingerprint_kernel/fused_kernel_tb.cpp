@@ -61,11 +61,15 @@ int main() {
               << "  hann_energy: " << hann_energy << "\n";
 
     // Single fused kernel call: spectrogram computation + peak detection.
+    // spec_power stands in for the device-side DDR scratch buffer a real
+    // host would allocate once and never sync back -- csim just needs any
+    // backing memory of the right shape.
+    static float spec_power[MAX_FREQ][MAX_WINDOWS];
     static int peak_freq[MAX_PEAKS];
     static int peak_time[MAX_PEAKS];
     int peak_count = 0;
 
-    fingerprint_kernel(windows, num_windows, hann_energy,
+    fingerprint_kernel(windows, num_windows, hann_energy, spec_power,
                         peak_freq, peak_time, &peak_count);
 
     std::cout << "Found " << peak_count << " peaks.\n";

@@ -6,9 +6,14 @@
 // and detect_peaks in fingerprint_kernel.cpp), each with their own m_axi/
 // s_axilite interface. Fusing them means:
 //   - Only ONE kernel launch from the host (one XRT enqueue instead of two).
-//   - spec_power lives in local on-chip memory and is never written back out
-//     to DDR and read back in for the second stage -- it never crosses the
-//     m_axi boundary at all.
+//   - spec_power is a device-side DDR scratch buffer (its own m_axi bundle),
+//     allocated once and never sync'd to/from the host. The full spectrogram
+//     (2049 x 100 floats, ~800KB) does not fit in the ~100 BRAM18K blocks
+//     available on xc7a35t as an on-chip buffer -- see fused_kernel_results.md
+//     for why (checked both frequency-major and time-major buffering; neither
+//     fits at float precision). Keeping it in device DDR instead of host-
+//     visible DDR still removes what actually mattered: the host never syncs
+//     this buffer and there's no second kernel launch.
 //
 // The FFT stage reuses the LUT-based approach from
 // compute_spectrogram_kernel_lut.cpp (precomputed twiddle factors +
@@ -227,11 +232,13 @@ void fingerprint_kernel(
     float windows[MAX_WINDOWS][WINDOW_SIZE],
     int   num_windows,
     float hann_energy,
+    float spec_power[MAX_FREQ][MAX_WINDOWS],
     int   peak_freq[MAX_PEAKS],
     int   peak_time[MAX_PEAKS],
     int*  peak_count
 ) {
 #pragma HLS INTERFACE m_axi port=windows    depth=409600 offset=slave bundle=gmem0
+#pragma HLS INTERFACE m_axi port=spec_power depth=204900 offset=slave bundle=gmem2
 #pragma HLS INTERFACE m_axi port=peak_freq  depth=20000  offset=slave bundle=gmem1
 #pragma HLS INTERFACE m_axi port=peak_time  depth=20000  offset=slave bundle=gmem1
 #pragma HLS INTERFACE m_axi port=peak_count depth=1       offset=slave bundle=gmem1
@@ -239,8 +246,6 @@ void fingerprint_kernel(
 #pragma HLS INTERFACE s_axilite port=num_windows bundle=control
 #pragma HLS INTERFACE s_axilite port=hann_energy bundle=control
 #pragma HLS INTERFACE s_axilite port=return      bundle=control
-
-    static float spec_power[MAX_FREQ][MAX_WINDOWS];
 
     compute_spectrogram_stage(windows, num_windows, hann_energy, spec_power);
     detect_peaks_stage(spec_power, num_windows, peak_freq, peak_time, peak_count);
