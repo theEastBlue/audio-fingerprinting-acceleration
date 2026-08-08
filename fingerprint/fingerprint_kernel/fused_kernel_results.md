@@ -1,10 +1,39 @@
 # Fused Kernel (spectrogram + peak detection) — Results
 
 **By Netik Maheshwar**
-Target device: Artix-7 xc7a35tcsg324-1 | Clock: 100 MHz (10 ns)
+Target device used for all numbers below: Artix-7 xc7a35tcsg324-1 (**placeholder
+part, not the real board** — see "Real target device" below) | Clock: 100 MHz (10 ns)
 Audio: test.wav — 140,561 samples @ 22,050 Hz mono → 67 windows of 4,096 samples
 No board access for this pass — all numbers below are from a real, local run of
 `csim_design` + `csynth_design` (Vitis HLS 2024.1), not hand estimates.
+
+## Real target device: xc7a35t is a stand-in, not the actual board
+
+Per `meeting-minutes/minutes-27-Jul-26.md` and `minutes-3-aug-26.md`, the
+team's real hardware is a **Kria board** (PetaLinux + `xmutil` in `board.sh`),
+i.e. a Zynq UltraScale+ K26 SOM — most likely the **KV260**. `xc7a35t` has no
+ARM processing system and cannot run PetaLinux at all, so it was never a real
+deployment target; it's just the part every `kernel_run*.tcl` script in this
+repo (including the ones already on `main`/other branches, and the ones
+written for this fusion work) happens to use for early resource estimates.
+The team's own notes also mention a **144 BRAM limit** for the real board —
+a different number than the ~100 used throughout this document.
+
+I attempted to re-verify against `xck26-sfvc784-2LV-c` (the real KV260 part)
+via a new `kernel_run_fused_kv260.tcl`, targeting the same fused kernel. It
+failed immediately:
+```
+ERROR: [HLS 200-1023] Part 'xck26-sfvc784-2LV-c' is not installed.
+```
+This machine's Vitis HLS 2024.1 install only has 7-series (Artix-7/Kintex-7
+etc.) device support; Zynq UltraScale+ device packs are a separate, large
+Xilinx download not present here. So **every BRAM/DSP/FF/LUT percentage in
+this document is against the wrong chip** — directionally useful (proves the
+fusion source code is correct and that *some* buffering strategy fits *some*
+device), but not a valid resource-budget check for the real KV260. Getting a
+real number requires either installing the Zynq UltraScale+ device pack on a
+machine that has Vitis, or running `kernel_run_fused_kv260.tcl` somewhere
+that already has it.
 
 ---
 
@@ -165,19 +194,40 @@ figure without XRT/board access. `hw_emu` (Vitis hardware emulation) — no
 board needed — would be the next step to get a real, simulated transfer-time
 number in place of this analytical argument.
 
+## host.cpp — updated, but uncompiled
+
+`fingerprint/fingerprint_host/host.cpp` now launches `fingerprint_kernel`
+once instead of `detect_peaks` alone: it does CPU-side windowing only
+(`build_windows`/`build_hann_window`/`apply_hann`), allocates `bo_windows`,
+`bo_spec_power` (allocated but **never sync'd** — see above), `bo_peak_freq`,
+`bo_peak_time`, `bo_peak_count`, and reads results back from a single
+`run.wait()`. Argument order was checked by hand against `fused_kernel.h`'s
+signature (`windows, num_windows, hann_energy, spec_power, peak_freq,
+peak_time, peak_count`) and matches.
+
+This machine has neither the XRT SDK (`xrt/xrt_bo.h` etc.) nor a C/C++
+compiler on `PATH`, so **this change has not been compiled or run** — it's
+reviewed, not verified. First real test of it needs either XRT installed
+locally or building on a machine that has it.
+
 ## Bottom line
 
 - **Fusion is functionally correct** (CSIM PASS, bit-exact against gold
   peaks, re-verified after the fix) and the accelerated FFT carries over
   unchanged (II=2, 136.99MHz).
-- **Fusion now fits the target FPGA**: BRAM 561% → 53%, all other resources
-  well within budget (DSP 50%, FF 27%, LUT 62%) — both measured via real
-  `csynth_design` runs, not estimated.
-- Remaining gaps, in order of what's next: (1) no `cosim`/`hw_emu` run yet,
-  so timing is still HLS-estimated rather than RTL-cycle-accurate or
-  XRT-measured; (2) `kernel_run_fused.tcl` stops after `csynth_design` — no
-  `export_design`, so no `.xclbin`/`finger.bin` has been built; (3) `host.cpp`
-  has not been updated to call this fused kernel instead of the two old ones;
-  (4) no board run, by design (none available). None of these are blocked on
-  anything unresolved anymore — the architectural question (does it fit) is
-  answered.
+- **Fusion fits *a* device** (xc7a35t placeholder: BRAM 561% → 53%, DSP 50%,
+  FF 27%, LUT 62%, all measured via real `csynth_design` runs) but **not
+  verified against the real KV260/XCK26 part** — blocked by a missing device
+  pack on this machine, not by unfinished work.
+- `host.cpp` now calls the fused kernel with a single launch, but is
+  **uncompiled** — no XRT SDK or C++ compiler available here.
+- Remaining gaps, in order of what actually blocks a board run: (1) real
+  resource numbers against XCK26 (needs the Zynq UltraScale+ device pack);
+  (2) compiling `host.cpp` (needs XRT SDK); (3) `export_design` — no
+  `.xclbin`/`finger.bin` has been built, `kernel_run_fused.tcl` stops after
+  `csynth_design`, and building one for an embedded part needs a Vitis
+  platform (`.xpfm`) this machine doesn't have; (4) `cosim`/`hw_emu` for
+  RTL-accurate or XRT-measured timing instead of HLS estimates; (5) an actual
+  board run. Every one of these is an environment/access gap, not an open
+  design question — the source-level work (fusion architecture, BRAM fix,
+  host integration) is done.

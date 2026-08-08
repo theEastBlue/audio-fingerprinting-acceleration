@@ -71,61 +71,87 @@ std::string generate_hashes(PeakList& peaks) {
     return buf.str();
 }
 
-// Overloaded function to pass XRT device and kernel objects
+// Overloaded function to pass XRT device and kernel objects.
+//
+// Calls the FUSED kernel (fingerprint_kernel: spectrogram + peak detection
+// in one launch) instead of the old two-kernel sequence (a CPU-side
+// compute_spectrogram followed by a detect_peaks kernel launch). See
+// fingerprint/fingerprint_kernel/fused_kernel_results.md for why spec_power
+// is a device-side scratch buffer here: it's allocated on the device and
+// never sync'd to/from the host -- the kernel writes and reads it
+// internally, which is what actually removes the second kernel launch and
+// the spectrogram's host round trip that existed before.
 std::string fingerprint(float* data, int data_size, xrt::device& device, xrt::kernel& krnl) {
-    static Spectrogram spec;
+    static float windows[MAX_WINDOWS][WINDOW_SIZE];
+    static float hann[WINDOW_SIZE];
     static PeakList peaks;
     int num_windows = 0;
 
-    // Step 1: Preprocessing (CPU)
-    preprocessing(data, data_size, spec, num_windows);
+    // Step 1: Windowing (CPU). The FFT/spectrogram itself now runs on the
+    // FPGA as part of the fused kernel, not here.
+    profiler.begin("1. Windowing");
+    build_windows(data, data_size, windows, num_windows);
+    build_hann_window(hann);
+    apply_hann(windows, hann, num_windows);
+    profiler.end("1. Windowing");
 
-    // Step 2: Hardware Acceleration (XRT)
-    profiler.begin("3. Peak Detection (XRT Transfer & Kernel Exec)");
+    float hann_energy = 0.0f;
+    for (int i = 0; i < WINDOW_SIZE; i++) hann_energy += hann[i] * hann[i];
 
-    // Allocate Buffer Objects (BOs) in Global Memory
-    auto bo_spec      = xrt::bo(device, MAX_FREQ * MAX_WINDOWS * sizeof(float), krnl.group_id(0));
-    auto bo_peak_freq = xrt::bo(device, MAX_PEAKS * sizeof(int), krnl.group_id(2));
-    auto bo_peak_time = xrt::bo(device, MAX_PEAKS * sizeof(int), krnl.group_id(3));
+    // Step 2: Hardware Acceleration (XRT) -- ONE kernel launch.
+    profiler.begin("2. Fused Kernel (XRT Transfer & Kernel Exec)");
 
-    // Map device buffers to host pointers
-    auto map_spec      = bo_spec.map<float*>();
-    auto map_peak_freq = bo_peak_freq.map<int*>();
-    auto map_peak_time = bo_peak_time.map<int*>();
+    // Allocate Buffer Objects (BOs) in Global Memory.
+    // Argument order matches fingerprint_kernel's signature:
+    //   windows(0), num_windows(1), hann_energy(2), spec_power(3),
+    //   peak_freq(4), peak_time(5), peak_count(6)
+    auto bo_windows    = xrt::bo(device, MAX_WINDOWS * WINDOW_SIZE * sizeof(float), krnl.group_id(0));
+    auto bo_spec_power = xrt::bo(device, MAX_FREQ * MAX_WINDOWS * sizeof(float), krnl.group_id(3));
+    auto bo_peak_freq  = xrt::bo(device, MAX_PEAKS * sizeof(int), krnl.group_id(4));
+    auto bo_peak_time  = xrt::bo(device, MAX_PEAKS * sizeof(int), krnl.group_id(5));
+    auto bo_peak_count = xrt::bo(device, sizeof(int), krnl.group_id(6));
 
-    // Copy spectrogram data to the mapped host pointer, then sync it to the device
-    std::memcpy(map_spec, spec.power, MAX_FREQ * MAX_WINDOWS * sizeof(float));
-    bo_spec.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    // Map device buffers to host pointers.
+    auto map_windows    = bo_windows.map<float*>();
+    auto map_peak_freq  = bo_peak_freq.map<int*>();
+    auto map_peak_time  = bo_peak_time.map<int*>();
+    auto map_peak_count = bo_peak_count.map<int*>();
 
-    // Execute the kernel
-    // Arguments match the kernel signature: spec (0), num_windows (1), peak_freq (2), peak_time (3), peak_count (4)
-    // We pass 0 as a placeholder for the peak_count reference scalar.
-    auto run = krnl(bo_spec, num_windows, bo_peak_freq, bo_peak_time, 0);
-    
-    // Wait for the FPGA to finish processing
+    // Copy windowed audio to the mapped host pointer, then sync to device.
+    std::memcpy(map_windows, windows, MAX_WINDOWS * WINDOW_SIZE * sizeof(float));
+    bo_windows.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+    // bo_spec_power is intentionally NEVER sync'd here -- it's scratch DRAM
+    // the kernel allocates work in internally (spectrogram computation
+    // writes it, peak detection reads it back), all within this single
+    // kernel invocation. The host never needs its contents.
+    auto run = krnl(bo_windows, num_windows, hann_energy, bo_spec_power,
+                     bo_peak_freq, bo_peak_time, bo_peak_count);
+
+    // Wait for the FPGA to finish processing.
     run.wait();
 
-    // Sync output arrays from the device back to host memory
+    // Sync output arrays from the device back to host memory.
     bo_peak_freq.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
     bo_peak_time.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+    bo_peak_count.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
 
-    // Read the output scalar (peak_count) directly from the s_axilite register
-    int peak_count = run.get_arg<int>(4);
+    int peak_count = map_peak_count[0];
 
-    // Repack flattened hardware arrays back into CPU structs
+    // Repack flattened hardware arrays back into CPU structs.
     peaks.count = peak_count;
     for (int i = 0; i < peak_count; i++) {
         peaks.peaks[i].freq = map_peak_freq[i];
         peaks.peaks[i].time = map_peak_time[i];
     }
-    profiler.end("3. Peak Detection (XRT Transfer & Kernel Exec)");
+    profiler.end("2. Fused Kernel (XRT Transfer & Kernel Exec)");
 
     std::cout << "Found " << peaks.count << " peaks.\n";
 
     // Step 3: Post-processing (CPU)
-    profiler.begin("4. Hashing and JSON");
+    profiler.begin("3. Hashing and JSON");
     std::string result = generate_hashes(peaks);
-    profiler.end("4. Hashing and JSON");
+    profiler.end("3. Hashing and JSON");
 
     profiler.print();
 
@@ -153,7 +179,7 @@ int main(int argc, char** argv) {
     
     std::cout << "Loading xclbin: " << binaryFile << "\n";
     auto uuid = device.load_xclbin(binaryFile);
-    auto krnl = xrt::kernel(device, uuid, "detect_peaks");
+    auto krnl = xrt::kernel(device, uuid, "fingerprint_kernel");
 
     // Read Audio Data
     // system("ffmpeg -hide_banner -loglevel panic -i test.mp3 -acodec pcm_s16le -ac 1 -ar 22050 test.wav");
