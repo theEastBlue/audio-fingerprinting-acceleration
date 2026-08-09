@@ -1,0 +1,370 @@
+
+
+================================================================
+== Vitis HLS Report for 'compute_spectrogram_stage_Pipeline_BUTTERFLY'
+================================================================
+* Date:           Sat Aug  8 12:51:43 2026
+
+* Version:        2024.1 (Build 5069499 on May 21 2024)
+* Project:        fused_prj
+* Solution:       solution1 (Vivado IP Flow Target)
+* Product family: artix7
+* Target device:  xc7a35t-csg324-1
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  5.926 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+-----------+-----+------+-----------------------------------------------+
+    |  Latency (cycles) |  Latency (absolute)  |  Interval  |                    Pipeline                   |
+    |   min   |   max   |    min   |    max    | min |  max |                      Type                     |
+    +---------+---------+----------+-----------+-----+------+-----------------------------------------------+
+    |       25|     4119|  0.250 us|  41.190 us|    4|  4098|  loop auto-rewind stp(delay=0 clock cycles(s))|
+    +---------+---------+----------+-----------+-----+------+-----------------------------------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +-------------+---------+---------+----------+-----------+-----------+----------+----------+
+        |             |  Latency (cycles) | Iteration|  Initiation Interval  |   Trip   |          |
+        |  Loop Name  |   min   |   max   |  Latency |  achieved |   target  |   Count  | Pipelined|
+        +-------------+---------+---------+----------+-----------+-----------+----------+----------+
+        |- BUTTERFLY  |       23|     4117|        24|          2|          1|  1 ~ 2048|       yes|
+        +-------------+---------+---------+----------+-----------+-----------+----------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++-----------------+---------+----+-------+-------+-----+
+|       Name      | BRAM_18K| DSP|   FF  |  LUT  | URAM|
++-----------------+---------+----+-------+-------+-----+
+|DSP              |        -|   -|      -|      -|    -|
+|Expression       |        -|   -|      0|    157|    -|
+|FIFO             |        -|   -|      -|      -|    -|
+|Instance         |        -|   4|    612|    530|    -|
+|Memory           |        8|   -|      0|      0|    -|
+|Multiplexer      |        -|   -|      0|    595|    -|
+|Register         |        -|   -|   2141|    704|    -|
++-----------------+---------+----+-------+-------+-----+
+|Total            |        8|   4|   2753|   1986|    0|
++-----------------+---------+----+-------+-------+-----+
+|Available        |      100|  90|  41600|  20800|    0|
++-----------------+---------+----+-------+-------+-----+
+|Utilization (%)  |        8|   4|      6|      9|    0|
++-----------------+---------+----+-------+-------+-----+
+
++ Detail: 
+    * Instance: 
+    +------------------------------------+--------------------------------+---------+----+-----+-----+-----+
+    |              Instance              |             Module             | BRAM_18K| DSP|  FF | LUT | URAM|
+    +------------------------------------+--------------------------------+---------+----+-----+-----+-----+
+    |fadd_32ns_32ns_32_7_full_dsp_1_U16  |fadd_32ns_32ns_32_7_full_dsp_1  |        0|   2|  306|  231|    0|
+    |fsub_32ns_32ns_32_7_full_dsp_1_U17  |fsub_32ns_32ns_32_7_full_dsp_1  |        0|   2|  306|  231|    0|
+    |sparsemux_9_2_32_1_1_U20            |sparsemux_9_2_32_1_1            |        0|   0|    0|   17|    0|
+    |sparsemux_9_2_32_1_1_U21            |sparsemux_9_2_32_1_1            |        0|   0|    0|   17|    0|
+    |sparsemux_9_2_32_1_1_U22            |sparsemux_9_2_32_1_1            |        0|   0|    0|   17|    0|
+    |sparsemux_9_2_32_1_1_U23            |sparsemux_9_2_32_1_1            |        0|   0|    0|   17|    0|
+    +------------------------------------+--------------------------------+---------+----+-----+-----+-----+
+    |Total                               |                                |        0|   4|  612|  530|    0|
+    +------------------------------------+--------------------------------+---------+----+-----+-----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    +----------+-----------------------------------------------------------------+---------+---+----+-----+------+-----+------+-------------+
+    |  Memory  |                              Module                             | BRAM_18K| FF| LUT| URAM| Words| Bits| Banks| W*Bits*Banks|
+    +----------+-----------------------------------------------------------------+---------+---+----+-----+------+-----+------+-------------+
+    |W_imag_U  |compute_spectrogram_stage_Pipeline_BUTTERFLY_W_imag_ROM_AUTO_1R  |        4|  0|   0|    0|  2048|   32|     1|        65536|
+    |W_real_U  |compute_spectrogram_stage_Pipeline_BUTTERFLY_W_real_ROM_AUTO_1R  |        4|  0|   0|    0|  2048|   32|     1|        65536|
+    +----------+-----------------------------------------------------------------+---------+---+----+-----+------+-----+------+-------------+
+    |Total     |                                                                 |        8|  0|   0|    0|  4096|   64|     2|       131072|
+    +----------+-----------------------------------------------------------------+---------+---+----+-----+------+-----+------+-------------+
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +-------------------------------------+----------+----+---+----+------------+------------+
+    |            Variable Name            | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +-------------------------------------+----------+----+---+----+------------+------------+
+    |add_ln64_fu_392_p2                   |         +|   0|  0|  37|          30|           1|
+    |add_ln69_fu_405_p2                   |         +|   0|  0|  18|          11|          11|
+    |add_ln73_fu_416_p2                   |         +|   0|  0|  19|          12|          12|
+    |add_ln74_fu_435_p2                   |         +|   0|  0|  19|          12|          12|
+    |ap_enable_state14_pp0_iter6_stage1   |       and|   0|  0|   2|           1|           1|
+    |ap_enable_state15_pp0_iter7_stage0   |       and|   0|  0|   2|           1|           1|
+    |ap_enable_state23_pp0_iter11_stage0  |       and|   0|  0|   2|           1|           1|
+    |ap_enable_state24_pp0_iter11_stage1  |       and|   0|  0|   2|           1|           1|
+    |ap_enable_state25_pp0_iter12_stage0  |       and|   0|  0|   2|           1|           1|
+    |ap_enable_state3_pp0_iter1_stage0    |       and|   0|  0|   2|           1|           1|
+    |ap_enable_state4_pp0_iter1_stage1    |       and|   0|  0|   2|           1|           1|
+    |ap_predicate_op67_load_state3        |       and|   0|  0|   2|           1|           1|
+    |ap_predicate_op68_load_state3        |       and|   0|  0|   2|           1|           1|
+    |ap_predicate_op69_load_state3        |       and|   0|  0|   2|           1|           1|
+    |ap_predicate_op70_load_state3        |       and|   0|  0|   2|           1|           1|
+    |icmp_ln64_fu_387_p2                  |      icmp|   0|  0|  38|          31|          31|
+    |ap_block_pp0                         |        or|   0|  0|   2|           1|           1|
+    |ap_enable_pp0                        |       xor|   0|  0|   2|           1|           2|
+    +-------------------------------------+----------+----+---+----+------------+------------+
+    |Total                                |          |   0|  0| 157|         109|          81|
+    +-------------------------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +------------------------------------------------------------------------------+----+-----------+-----+-----------+
+    |                                     Name                                     | LUT| Input Size| Bits| Total Bits|
+    +------------------------------------------------------------------------------+----+-----------+-----+-----------+
+    |ap_NS_fsm                                                                     |  13|          3|    1|          3|
+    |ap_done_int                                                                   |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter0                                                       |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1                                                       |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter12                                                      |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter10_reg                                             |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter11_reg                                             |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter1_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter2_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter3_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter4_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter5_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter6_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter7_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter8_reg                                              |   9|          2|    1|          2|
+    |ap_loop_exit_ready_pp0_iter9_reg                                              |   9|          2|    1|          2|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_address0_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_address1_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_d0_local        |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_address0_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_address1_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_d0_local        |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_address0_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_address1_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_d0_local        |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_address0_local    |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_address1_local    |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_d0_local          |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_address0_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_address1_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_d0_local        |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_address0_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_address1_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_d0_local        |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_address0_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_address1_local  |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_d0_local        |  13|          3|   32|         96|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_address0_local    |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_address1_local    |  13|          3|   10|         30|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_d0_local          |  13|          3|   32|         96|
+    |grp_fu_338_opcode                                                             |  13|          3|    2|          6|
+    |grp_fu_338_p0                                                                 |  13|          3|   32|         96|
+    |grp_fu_338_p1                                                                 |  13|          3|   32|         96|
+    |grp_fu_342_p0                                                                 |  13|          3|   32|         96|
+    |grp_fu_342_p1                                                                 |  13|          3|   32|         96|
+    |grp_fu_346_p0                                                                 |  13|          3|   32|         96|
+    |grp_fu_346_p1                                                                 |  13|          3|   32|         96|
+    |grp_fu_350_p1                                                                 |  13|          3|   32|         96|
+    |grp_fu_354_p1                                                                 |  13|          3|   32|         96|
+    |k_fu_84                                                                       |   9|          2|   30|         60|
+    |phi_mul_fu_80                                                                 |   9|          2|   11|         22|
+    +------------------------------------------------------------------------------+----+-----------+-----+-----------+
+    |Total                                                                         | 595|        136|  731|       2137|
+    +------------------------------------------------------------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-----------------------------------------------------------------------------+----+----+-----+-----------+
+    |                                     Name                                    | FF | LUT| Bits| Const Bits|
+    +-----------------------------------------------------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                                                                    |   2|   0|    2|          0|
+    |ap_done_reg                                                                  |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter0_reg                                                  |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter10                                                     |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter11                                                     |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter12                                                     |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter2                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter3                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter4                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter5                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter6                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter7                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter8                                                      |   1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter9                                                      |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter10_reg                                            |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter11_reg                                            |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter1_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter2_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter3_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter4_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter5_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter6_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter7_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter8_reg                                             |   1|   0|    1|          0|
+    |ap_loop_exit_ready_pp0_iter9_reg                                             |   1|   0|    1|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_add_1_reg_690  |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_add_reg_768    |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_add_1_reg_696  |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_add_reg_774    |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_add_1_reg_702  |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_add_reg_780    |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_addr_1_reg_684   |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_addr_reg_762     |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_add_1_reg_666  |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_add_reg_744    |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_add_1_reg_672  |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_add_reg_750    |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_add_1_reg_678  |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_add_reg_756    |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_addr_1_reg_660   |  10|   0|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_addr_reg_738     |  10|   0|   10|          0|
+    |cwi_reg_654                                                                  |  32|   0|   32|          0|
+    |cwr_reg_648                                                                  |  32|   0|   32|          0|
+    |icmp_ln64_reg_612                                                            |   1|   0|    1|          0|
+    |k_fu_84                                                                      |  30|   0|   30|          0|
+    |lshr_ln4_reg_632                                                             |  10|   0|   10|          0|
+    |lshr_ln5_reg_643                                                             |  10|   0|   10|          0|
+    |mul46_i_reg_718                                                              |  32|   0|   32|          0|
+    |mul49_i_reg_723                                                              |  32|   0|   32|          0|
+    |mul52_i_reg_728                                                              |  32|   0|   32|          0|
+    |mul55_i_reg_733                                                              |  32|   0|   32|          0|
+    |phi_mul_fu_80                                                                |  11|   0|   11|          0|
+    |reg_358                                                                      |  32|   0|   32|          0|
+    |sub63_i_reg_810                                                              |  32|   0|   32|          0|
+    |sub66_i_reg_818                                                              |  32|   0|   32|          0|
+    |tmp_8_reg_708                                                                |  32|   0|   32|          0|
+    |tmp_9_reg_713                                                                |  32|   0|   32|          0|
+    |trunc_ln74_reg_626                                                           |   2|   0|    2|          0|
+    |trunc_ln75_reg_637                                                           |   2|   0|    2|          0|
+    |ui_reg_792                                                                   |  32|   0|   32|          0|
+    |ur_reg_786                                                                   |  32|   0|   32|          0|
+    |vi_reg_804                                                                   |  32|   0|   32|          0|
+    |vr_reg_798                                                                   |  32|   0|   32|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_add_1_reg_690  |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_4_add_reg_768    |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_add_1_reg_696  |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_5_add_reg_774    |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_add_1_reg_702  |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_6_add_reg_780    |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_addr_1_reg_684   |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_im_addr_reg_762     |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_add_1_reg_666  |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_1_add_reg_744    |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_add_1_reg_672  |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_2_add_reg_750    |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_add_1_reg_678  |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_3_add_reg_756    |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_addr_1_reg_660   |  64|  32|   10|          0|
+    |compute_spectrogram_stage_float_4096_int_float_float_100_re_addr_reg_738     |  64|  32|   10|          0|
+    |cwi_reg_654                                                                  |  64|  32|   32|          0|
+    |cwr_reg_648                                                                  |  64|  32|   32|          0|
+    |icmp_ln64_reg_612                                                            |  64|  32|    1|          0|
+    |lshr_ln4_reg_632                                                             |  64|  32|   10|          0|
+    |trunc_ln74_reg_626                                                           |  64|  32|    2|          0|
+    |trunc_ln75_reg_637                                                           |  64|  32|    2|          0|
+    +-----------------------------------------------------------------------------+----+----+-----+-----------+
+    |Total                                                                        |2141| 704|  972|          0|
+    +-----------------------------------------------------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++------------------------------------------------------------------------+-----+-----+------------+---------------------------------------------------------------+--------------+
+|                                RTL Ports                               | Dir | Bits|  Protocol  |                         Source Object                         |    C Type    |
++------------------------------------------------------------------------+-----+-----+------------+---------------------------------------------------------------+--------------+
+|ap_clk                                                                  |   in|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|ap_rst                                                                  |   in|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|ap_start                                                                |   in|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|ap_done                                                                 |  out|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|ap_idle                                                                 |  out|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|ap_ready                                                                |  out|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1094_p_din0                                                      |  out|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1094_p_din1                                                      |  out|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1094_p_opcode                                                    |  out|    2|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1094_p_dout0                                                     |   in|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1094_p_ce                                                        |  out|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1098_p_din0                                                      |  out|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1098_p_din1                                                      |  out|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1098_p_dout0                                                     |   in|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1098_p_ce                                                        |  out|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1102_p_din0                                                      |  out|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1102_p_din1                                                      |  out|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1102_p_dout0                                                     |   in|   32|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|grp_fu_1102_p_ce                                                        |  out|    1|  ap_ctrl_hs|                   compute_spectrogram_stage_Pipeline_BUTTERFLY|  return value|
+|trunc_ln10                                                              |   in|   31|     ap_none|                                                     trunc_ln10|        scalar|
+|empty_45                                                                |   in|   11|     ap_none|                                                       empty_45|        scalar|
+|empty                                                                   |   in|   12|     ap_none|                                                          empty|        scalar|
+|trunc_ln11                                                              |   in|   12|     ap_none|                                                     trunc_ln11|        scalar|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_address0    |  out|   10|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_ce0         |  out|    1|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_we0         |  out|    1|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_d0          |  out|   32|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_address1    |  out|   10|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_ce1         |  out|    1|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_q1          |   in|   32|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_im|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_address0    |  out|   10|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_ce0         |  out|    1|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_we0         |  out|    1|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_d0          |  out|   32|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_address1    |  out|   10|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_ce1         |  out|    1|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_q1          |   in|   32|   ap_memory|    compute_spectrogram_stage_float_4096_int_float_float_100_re|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_address0  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_ce0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_we0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_d0        |  out|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_address1  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_ce1       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_1_q1        |   in|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_1|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_address0  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_ce0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_we0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_d0        |  out|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_address1  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_ce1       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_2_q1        |   in|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_2|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_address0  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_ce0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_we0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_d0        |  out|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_address1  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_ce1       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_re_3_q1        |   in|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_re_3|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_address0  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_ce0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_we0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_d0        |  out|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_address1  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_ce1       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_4_q1        |   in|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_4|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_address0  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_ce0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_we0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_d0        |  out|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_address1  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_ce1       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_5_q1        |   in|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_5|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_address0  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_ce0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_we0       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_d0        |  out|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_address1  |  out|   10|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_ce1       |  out|    1|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
+|compute_spectrogram_stage_float_4096_int_float_float_100_im_6_q1        |   in|   32|   ap_memory|  compute_spectrogram_stage_float_4096_int_float_float_100_im_6|         array|
++------------------------------------------------------------------------+-----+-----+------------+---------------------------------------------------------------+--------------+
+
