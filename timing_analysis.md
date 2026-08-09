@@ -20,3 +20,16 @@
 3. Peak Detection: 70.6609 ms
 2. FFT + Spectrogram: 16.8506 ms
 1. Windowing: 0.660458 ms
+
+## Version PS only (petalinux)
+===== PROFILING =====
+3. Peak Detection: 16284.9 ms
+2. FFT + Spectrogram: 392.447 ms
+1. Windowing: 14.86 ms
+
+## Version PS+PL (Board non-accelerated version)
+===== PROFILING =====
+4. Hashing and JSON: 7.85546 ms
+3. Peak Detection (XRT Transfer & Kernel Exec): 5005.44 ms
+2. FFT + Spectrogram: 389.705 ms
+1. Windowing: 14.9801 ms
