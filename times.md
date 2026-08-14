@@ -5,7 +5,7 @@
 - FFT + Spectrogram: 392.447 ms
 - Windowing: 14.86 ms
 - Peak Detection: 16284.9 ms
-- Hashing and JSON: 19.21 ms
+- Hashing and JSON: 7.6 ms
 
 ## SW + HW (unaccelerated)
 
