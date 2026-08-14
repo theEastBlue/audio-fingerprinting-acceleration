@@ -28,5 +28,20 @@ struct Timer {
     }
 };
 
+struct Rmse {
+    int num_sq;
+    float sum_sq;
+    float error;
+
+    Rmse() { num_sq = 0; sum_sq = 0; error = 0; }
+
+    float add_value(float d_n) {
+        num_sq++;
+        sum_sq += (d_n * d_n);
+        error = sqrtf(sum_sq / num_sq);
+        return error;
+    }
+};
+
 
 #endif

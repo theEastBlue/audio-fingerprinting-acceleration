@@ -54,7 +54,7 @@ Found 43 peaks.
 3. Peak Detection: 1515.63 ms
 Found 43 peaks.
 
-## Board results
+## Board results (We should've gotten 43 peaks)
 ===== PROFILING =====
 2. FFT + Spectrogram: 272.839 ms
 1. Windowing: 10.5635 ms

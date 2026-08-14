@@ -11,25 +11,12 @@
 #include "fingerprint.h"
 #include "timer.h"
 
-struct Rmse {
-    int num_sq;
-    float sum_sq;
-    float error;
-
-    Rmse() { num_sq = 0; sum_sq = 0; error = 0; }
-
-    float add_value(float d_n) {
-        num_sq++;
-        sum_sq += (d_n * d_n);
-        error = sqrtf(sum_sq / num_sq);
-        return error;
-    }
-};
-
 Rmse rmse_freq, rmse_time;
 Timer profiler2;
 
 int main() {
+
+    // for cosim: use cosim-test.wav
     std::ifstream f_in("test.wav", std::ios::binary);
     if (!f_in.is_open()) {
         std::cerr << "ERROR: Could not open 'test.wav'." << std::endl;
@@ -59,27 +46,32 @@ int main() {
     preprocessing(data, i, spec, num_windows);
 
     profiler2.begin("3. Peak Detection");
-    detect_peaks(spec.power, num_windows, peak_freq, peak_time, &peak_count);
+
+    detect_peaks(spec.power, num_windows, peak_freq, peak_time);
     profiler2.end("3. Peak Detection");
-    profiler2.print();
-    
-    peaks.count = peak_count;
-    for (int i = 0; i < peak_count; i++) {
+
+    peaks.count = 0;
+
+    for (int i = 0; i < MAX_PEAKS; i++) {
+        if (peak_time[i] == -1) break; // i hope this doesn't break vitis
         peaks.peaks[i].freq = peak_freq[i];
         peaks.peaks[i].time = peak_time[i];
+        peaks.count++;
     }
-    
+
+    profiler2.print();
 
     std::cout << "Found " << peaks.count << " peaks.\n";
-    // for (int i = 0; i < peaks.count; i++) {
-    //     std::cout << "Peak " << i
-    //             << "  freq=" << peaks.peaks[i].freq
-    //             << "  time=" << peaks.peaks[i].time
-    //             << '\n';
-    // }
+    for (int i = 0; i < peaks.count; i++) {
+        std::cout << "Peak " << i
+                << "  freq=" << peaks.peaks[i].freq
+                << "  time=" << peaks.peaks[i].time
+                << '\n';
+    }
 
     PeakList gold_peaks;
     gold_peaks.count = 0;
+    // for cosim: use cosim-peaks.gold.dat
     FILE *fp = fopen("peaks.gold.dat", "r");
     if (!fp) {
         std::cerr << "ERROR: Could not open 'peaks.gold.dat'." << std::endl;

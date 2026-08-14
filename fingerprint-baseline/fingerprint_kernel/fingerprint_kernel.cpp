@@ -52,8 +52,6 @@ void detect_peaks(
     #pragma HLS INTERFACE s_axilite port=num_windows bundle=control
     #pragma HLS INTERFACE s_axilite port=return      bundle=control
 
-    // Line Buffer: Caches the last 41 rows of the spectrogram. 
-    // Partitioned so we can read a full column of 41 pixels in 1 clock cycle.
     float line_buf[MASK_SIZE][MAX_WINDOWS];
     // #pragma HLS ARRAY_PARTITION variable=line_buf complete dim=1 
 
@@ -81,64 +79,52 @@ void detect_peaks(
 
     int pc = 0;
 
-    // --- MAIN SLIDING WINDOW LOOP ---
-    
     // f loops up to MAX_FREQ + R to allow the final rows to flush out of the window
     slide_window: for (int f = 0; f < MAX_FREQ + R; f++) {
         
-        // STEP 1: Burst read ONE new row from DDR
         if (f < MAX_FREQ) {
             read_row: for (int w = 0; w < num_windows; w++) {
                 // #pragma HLS PIPELINE II=1
-                new_row[w] = spec[f][w]; // AXI burst read inferred here
+                new_row[w] = spec[f][w];
             }
         } else {
             zero_padding: for (int w = 0; w < num_windows; w++) {
                 // #pragma HLS PIPELINE II=1
-                new_row[w] = 0.0f; // Pad bottom edges with zero
+                new_row[w] = 0.0f;
             }
         }
 
-        // STEP 2: Slide the window across the line buffer
         // w loops up to num_windows + R to flush the right edge
         shift_window: for (int w = 0; w < num_windows + R; w++) {
             // #pragma HLS PIPELINE II=1
             
-            // 2a. Shift the 2D window left by one column
             shift_window_inner: for (int i = 0; i < MASK_SIZE; i++) {
                 for (int j = 0; j < MASK_SIZE - 1; j++) {
                     window[i][j] = window[i][j+1];
                 }
             }
 
-            // 2b. Load the newest column into the right-most edge of the window
             if (w < num_windows) {
-                // Save new row pixel into the cyclic line buffer
                 line_buf[f % MASK_SIZE][w] = new_row[w];
                 
-                // Pull the column from the line buffer into the window
                 sort_window: for (int i = 0; i < MASK_SIZE; i++) {
-                    int row_idx = (f + 1 + i) % MASK_SIZE; // Chronological sorting
+                    int row_idx = (f + 1 + i) % MASK_SIZE;
                     window[i][MASK_SIZE - 1] = line_buf[row_idx][w];
                 }
             } else {
-                // Pad right edges with zero
                 pad_window: for (int i = 0; i < MASK_SIZE; i++) {
                     window[i][MASK_SIZE - 1] = 0.0f;
                 }
             }
 
-            // STEP 3: Diamond Search Logic 
             int f_center = f - R;
             int w_center = w - R;
 
-            // Wait until the center pixel is over valid data
             if (f_center >= 0 && f_center < MAX_FREQ && w_center >= 0 && w_center < num_windows) {
                 float center_val = window[R][R];
                 float max_val = center_val;
                 bool all_bg = true;
 
-                // 841 parallel comparisons inferred here due to the fully partitioned window
                 find_peak: for (int i = 0; i < MASK_SIZE; i++) {
                     find_max: for (int j = 0; j < MASK_SIZE; j++) {
                         int dist = std::abs(i - R) + std::abs(j - R);

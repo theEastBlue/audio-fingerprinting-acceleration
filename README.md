@@ -2,6 +2,7 @@
 Hardware acceleration of the  dejavu-cpp-port
 
 > **NOTE: Week 05 Project Brief Presentation: https://canva.link/0kp52c2cmpuakbc**
+> **NOTE: Week 11 Project Presentation: https://canva.link/6xnup3n832n2uqr**
 
 **Meeting minutes:**
 - [6 July:](/meeting-minutes/minutes-6-jul-26.md)
@@ -47,20 +48,6 @@ The fingerprinting process consists of the following stages:
 
 ---
 
-## Project Objectives
-
-* Profile the software implementation to identify computational hotspots.
-* Evaluate which stages are suitable for FPGA acceleration.
-* Implement selected kernels using Vitis HLS.
-* Compare software and hardware implementations in terms of:
-
-  * Execution time
-  * Throughput
-  * Resource utilisation
-  * Accuracy
-
----
-
 ## Team
 
 | Name | zID | Role |
@@ -69,58 +56,6 @@ The fingerprinting process consists of the following stages:
 |   Venus   |  z5483461   |  Contributor    |
 |   Rukhsaar   |  z5619382   |   Contributor   |
 |   Netik   |  z5636903   |   Contributor   |
-
----
-
-## Building
-
-### Requirements
-
-* C++14
-* OpenCV
-* Boost
-* FFmpeg (demo only)
-
-### Build
-
-## Installing dependencies
-
-If Homebrew is installed, run:
-```bash
-brew install opencv boost ffmpeg pkg-config
-```
-To verify that the opencv was installed, run:
-```bash
-pkg-config --modversion opencv4
-```
-
-To compile the algorithm (using clang), run:
-
-```bash
-clang++ fingerprint.cpp \
-    -std=c++14 \
-    -I/opt/homebrew/opt/boost/include \
-    $(pkg-config --cflags --libs opencv4) \
-    -o fingerprint
-```
-The program can be compiled using g++ in much the same way.
-
-
-### Run
-
-```bash
-./fingerprint
-```
-
----
-
-## Future Work
-
-* Hardware acceleration of FFT using Vitis FFT IP
-* Streaming window generation
-* Hardware peak detection
-* End-to-end FPGA integration
-* Performance evaluation and benchmarking
 
 ---
 

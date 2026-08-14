@@ -2,22 +2,23 @@
 #ifndef FINGERPRINT_H
 #define FINGERPRINT_H
 
-constexpr int   DEFAULT_WINDOW_SIZE    = 4096;
+constexpr int   DEFAULT_WINDOW_SIZE    = 64;
 constexpr float DEFAULT_OVERLAP_RATIO  = 0.5f;
 
 constexpr int WINDOW_SIZE = DEFAULT_WINDOW_SIZE;
 constexpr int OVERLAP     = (int)(DEFAULT_WINDOW_SIZE * DEFAULT_OVERLAP_RATIO); // 2048 atm
 constexpr int HOP         = WINDOW_SIZE - OVERLAP; // 2048
 
-constexpr int MAX_SAMPLES = 200000;
-constexpr int MAX_WINDOWS = 100; // MAX_WINDOWS = (MAX_SAMPLES - OVERLAP) / HOP + 4; = 100 based on our current constants
-constexpr int MAX_FREQ    = WINDOW_SIZE / 2 + 1; // 2049
-constexpr int MAX_PEAKS   = 20000 + 1; // the extra 1 is because of our peak counting logic
+constexpr int MAX_SAMPLES = 1000;                 // was 200000
+constexpr int MAX_WINDOWS = 10;                   // was 100
+constexpr int MAX_FREQ    = WINDOW_SIZE / 2 + 1;  // now 33, was 2049
+constexpr int MAX_PEAKS   = 20 + 1;                // was 20001
+
 
 constexpr int   DEFAULT_FAN_VALUE      = 15;
 constexpr int   MIN_HASH_TIME_DELTA    = 0;
 constexpr int   MAX_HASH_TIME_DELTA    = 200;
-constexpr int   PEAK_NEIGHBORHOOD_SIZE = 20;
+constexpr int   PEAK_NEIGHBORHOOD_SIZE = 4;        // was 20
 constexpr float DEFAULT_AMP_MIN        = 10.0f;
 
 constexpr float FS                     = 22050.0f;
